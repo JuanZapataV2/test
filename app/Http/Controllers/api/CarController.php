@@ -5,7 +5,8 @@ namespace App\Http\Controllers\api;
 use App\Http\Controllers\Controller;
 use App\Models\Car;
 use Illuminate\Http\Request;
-
+use App\Http\Requests\CarRequest;
+use App\Exceptions\InvalidInputException;
 class CarController extends Controller
 {
     /**
@@ -25,10 +26,16 @@ class CarController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function store(CarRequest $request)
     {
-        $car = Car::create($request->all());
-
+        try{
+            $car = Car::create($request->all());
+            $request::validateBrand($request->brand);
+            $request::validateModel($request->model);
+        } catch(\Exception $e){
+            return response (['code'=>'400','title'=>'Algo ha ocurrido mal :(','message'=>$e->getMessage()], 422);
+        }
+        
         return response()->json(['data' => $car], 201);
     }
 
@@ -40,7 +47,18 @@ class CarController extends Controller
      */
     public function show(Car $car)
     {
-        return response()->json(['data' => $car], 200);
+        try{
+            $car = Car::where('id',$car->id);
+            if(is_null($car)){
+                throw new NotFoundHttpException();
+            }else{
+                return response()->json(['data' => $car], 200);  
+            }
+            
+        } catch(\Exception $e){
+            return response()->json(['message' => $e->getMessage()], 404);  
+        }
+        return response()->json(['data' => $car], 200); 
     }
 
     /**
@@ -50,7 +68,7 @@ class CarController extends Controller
      * @param  \App\Models\Car  $car
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Car $car)
+    public function update(CarRequest $request, Car $car)
     {
         $car->update($request->all());
         return response()->json(['data' => $car], 200);

@@ -4,7 +4,9 @@ namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Throwable;
-
+use App\Exceptions\InvalidInputException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 class Handler extends ExceptionHandler
 {
     /**
@@ -13,7 +15,7 @@ class Handler extends ExceptionHandler
      * @var array
      */
     protected $dontReport = [
-        //
+
     ];
 
     /**
@@ -34,8 +36,22 @@ class Handler extends ExceptionHandler
      */
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            //
+        $this->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->expectsJson()) {
+               return response(['title'=>'¡Ups! Algo ha salido mal',
+                                'code'=>404,'message'=>$e->getMessage()], 404);
+            }
         });
+
+        $this->renderable(function (MethodNotAllowedHttpException $e, $request) {
+            if ($request->expectsJson()) {
+               return response(['title'=>'Esta ruta no soporta el método que estás usando',
+                                'code'=>400,'message'=>$e->getMessage()], 400);
+            }
+        });
+
+        
     }
+
+
 }
